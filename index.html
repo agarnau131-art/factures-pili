@@ -607,7 +607,7 @@ async function loadAll(){
     }catch(e){db=null}
   }
   if(!db){const s=lsLoad();if(s){cfg={...BLANKCFG,...s.cfg};invoices=s.invoices||[];clients=s.clients||[]}}
-  $('st').textContent='Funciona sense internet. Les dades es guarden en aquest telèfon.';
+  $('st').textContent='Funciona sense internet. Les dades es guarden en aquest telèfon. (versió 3)';
 }
 async function put(path,data){if(db){await db.doc(path).set(JSON.parse(JSON.stringify(data)))}else lsSave()}
 async function del(path){if(db){await db.doc(path).delete()}else lsSave()}
