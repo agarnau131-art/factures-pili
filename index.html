@@ -77,6 +77,9 @@ table.h th{text-align:left;color:var(--mut);font-weight:500;font-size:13px;borde
 table.h td{border-bottom:1px solid var(--line);padding:6px;vertical-align:middle}
 table.h td.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 table.h button{min-height:36px;padding:4px 10px;font-size:14px}
+.sug{position:absolute;left:0;right:0;top:100%;z-index:5;margin-top:4px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px #0003;max-height:280px;overflow:auto}
+.sug button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;min-height:52px;padding:8px 12px;font-weight:600}
+.sug button:last-child{border-bottom:0}.sug small{display:block;font-weight:400;color:var(--mut);font-size:13px}
 .empty{color:var(--mut);padding:12px 0}
 @media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mut)}.stack td:empty{display:none}table.h td.n{text-align:start}}
 </style>
@@ -103,13 +106,13 @@ table.h button{min-height:36px;padding:4px 10px;font-size:14px}
   <div class="card">
     <h2>Client</h2>
     <div class="g">
-      <label class="w">Nom del client<input id="cnom" list="clients" autocomplete="off"></label>
+      <div class="w" style="position:relative"><label>Nom del client<input id="cnom" autocomplete="off" autocorrect="off" placeholder="Toca per veure els clients guardats"></label><div id="csug" class="sug" hidden></div></div>
       <label>NIF<input id="cnif"></label>
       <label>Població<input id="cpob"></label>
       <label class="w">Adreça<input id="cadr"></label>
     </div>
     <datalist id="clients"></datalist>
-    <p class="cap">Els clients es guarden sols. Escriu el nom d'un client ja fet i s'omplen les seves dades.</p>
+    <p class="cap">Els clients es guarden sols. Toca el nom del client i tria'l de la llista: s'omplen el NIF, l'adreça i la població.</p>
   </div>
 
   <div class="card">
@@ -677,6 +680,20 @@ $('pdf').onclick=async()=>{
   entrega(blob,name,'application/pdf','Factura '+inv.num+' desada.');
 };
 
+function hideSug(){$('csug').hidden=true}
+function showSug(){
+  const q=$('cnom').value.trim().toLowerCase();
+  const l=clients.map((c,i)=>({c,i})).filter(x=>!q||x.c.nom.toLowerCase().includes(q)).sort((a,b)=>a.c.nom.localeCompare(b.c.nom,'ca'));
+  if(!l.length||(l.length===1&&l[0].c.nom.trim().toLowerCase()===q)){hideSug();return}
+  $('csug').innerHTML=l.map(x=>`<button type="button" data-ci="${x.i}">${esc(x.c.nom)}<small>${esc([x.c.nif,x.c.adreca,x.c.poblacio].filter(Boolean).join(' · '))}</small></button>`).join('');
+  $('csug').hidden=false;
+}
+$('cnom').addEventListener('focus',showSug);
+$('cnom').addEventListener('input',showSug);
+$('cnom').addEventListener('blur',()=>setTimeout(hideSug,200));
+$('csug').addEventListener('pointerdown',e=>e.preventDefault());
+$('csug').addEventListener('click',e=>{const b=e.target.closest('[data-ci]');if(!b)return;const c=clients[+b.dataset.ci];if(!c)return;
+  touched=true;inv.client={nom:c.nom||'',nif:c.nif||'',adreca:c.adreca||'',poblacio:c.poblacio||''};for(const j in C)$(C[j]).value=inv.client[j];hideSug();$('cnom').blur();render()});
 let pend=null;
 function baixa(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000)}
 async function entrega(blob,name,type,ok){
